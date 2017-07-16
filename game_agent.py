@@ -19,6 +19,11 @@ def custom_score(game, player):
     Note: this function should be called from within a Player instance as
     `self.score()` -- you should not need to call this function directly.
 
+
+    *** Simplest Strategy ****
+    This heuristic method is just to calculate the ratio of remaining moves of self over those of opponent
+
+
     Parameters
     ----------
     game : `isolation.Board`
@@ -35,7 +40,21 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # return custom_score_2(game, player)
+    # return custom_score_3(game, player)
+
+    remain_moves = len(game.get_legal_moves(player))
+    opps_remain_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    return remain_moves / (opps_remain_moves + 0.0001)
+
 
 
 def custom_score_2(game, player):
@@ -212,8 +231,41 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        minmax = self.minmax_execute(game, depth, True)
+        return minmax[1]
+
+    def minmax_execute(self, game, depth, myturn):
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        no_legal_move = (-1, -1)
+        remaining_moves = game.get_legal_moves()
+
+        if len(remaining_moves) == 0:
+            # no more moves
+            return game.utility(self), no_legal_move
+
+        if depth == 0:
+            return self.score(game, self), no_legal_move
+
+        best_move = no_legal_move  # default
+
+        # set default score for each turn
+        if myturn:
+            v = float("-inf")
+        else:
+            v = float("inf")
+
+        turn = not myturn
+
+        for m in remaining_moves:
+            newmove = game.forecast_move(m)
+            score, _ = self.minmax_execute(newmove, depth - 1, turn)
+            if (myturn and v < score) or (not myturn and v > score):
+                v, best_move = score, m
+
+        return v, best_move
 
 
 class AlphaBetaPlayer(IsolationPlayer):
@@ -255,7 +307,24 @@ class AlphaBetaPlayer(IsolationPlayer):
         self.time_left = time_left
 
         # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        no_legal_move = (-1, -1)
+        best_move = no_legal_move
+        remaining_moves = game.get_legal_moves()
+
+        if len(remaining_moves) == 0:
+            # no more moves
+            return no_legal_move
+        try:
+            depth = 0
+            while self.time_left() > self.TIMER_THRESHOLD:
+                depth += 1
+                best_move = self.alphabeta(game, depth)
+        except SearchTimeout:
+            return best_move
+
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -302,8 +371,53 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+        last_best_move = (-1, -1)
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout
+
+        # TODO: finish this function!
+        alphabeta = self.alphabeta_execute(game, depth, True)
+        return alphabeta[1]
+
+    def alphabeta_execute(self, game, depth, myturn, alpha=float("-inf"), beta=float("inf")):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        no_legal_move = (-1, -1)
+
+        remaining_moves = game.get_legal_moves()
+
+        if len(remaining_moves) == 0:
+            # no more moves
+            return game.utility(self), no_legal_move
+
+        if depth == 0:
+            return self.score(game, self), no_legal_move
+
+        best_move = no_legal_move  # default
+
+        # set default score for each turn
+        if myturn:
+            v = float("-inf")
+        else:
+            v = float("inf")
+
+        turn = not myturn
+
+        for m in remaining_moves:
+            newmove = game.forecast_move(m)
+            score, _ = self.alphabeta_execute(newmove, depth - 1, turn, alpha, beta)
+            if myturn:
+                if v < score:
+                    v, best_move = score, m
+                if v >= beta:
+                    return v, best_move
+                alpha = max(alpha, v)
+            else:
+                if v > score:
+                    v, best_move = score, m
+                if v <= alpha:
+                    return v, best_move
+                beta = min(beta, v)
+
+        return v, best_move
