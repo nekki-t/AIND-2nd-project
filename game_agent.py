@@ -39,22 +39,18 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-
     if game.is_loser(player):
         return float("-inf")
 
     if game.is_winner(player):
         return float("inf")
 
-    # return custom_score_2(game, player)
-    # return custom_score_3(game, player)
-
     remain_moves = len(game.get_legal_moves(player))
-    opps_remain_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    opp_remain_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    my_weight = score_weight(game, player)
+    opp_weight = score_weight(game, game.get_opponent(player))
 
-    return remain_moves / (opps_remain_moves + 0.0001)
-
+    return remain_moves * my_weight - opp_remain_moves * opp_weight
 
 
 def custom_score_2(game, player):
@@ -79,9 +75,14 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    remain_moves = len(game.get_legal_moves(player))
+    return remain_moves * score_weight(game, player)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -105,9 +106,35 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    remain_moves = len(game.get_legal_moves(player))
+    opp_remain_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    return remain_moves / (opp_remain_moves + 0.0001)
+
+
+def score_weight(game, player):
+    player_location = game.get_player_location(player)
+    knight_moves = [(player_location[0] + 1, player_location[0] + 2)]
+    knight_moves.append((player_location[0] + 1, player_location[0] - 2))
+    knight_moves.append((player_location[0] - 1, player_location[0] + 2))
+    knight_moves.append((player_location[0] - 1, player_location[0] - 2))
+    knight_moves.append((player_location[0] + 2, player_location[0] + 1))
+    knight_moves.append((player_location[0] + 2, player_location[0] - 1))
+    knight_moves.append((player_location[0] - 2, player_location[0] + 1))
+    knight_moves.append((player_location[0] - 2, player_location[0] - 1))
+
+    weight = 1.
+    player_legal_moves = game.get_legal_moves(player)
+    for move in knight_moves:
+        if move in player_legal_moves:
+            weight = weight * 1.5
+    return weight
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -306,7 +333,6 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
         no_legal_move = (-1, -1)
@@ -371,11 +397,9 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        last_best_move = (-1, -1)
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout
 
-        # TODO: finish this function!
         alphabeta = self.alphabeta_execute(game, depth, True)
         return alphabeta[1]
 
